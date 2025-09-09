@@ -14,7 +14,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('me', [AuthController::class, 'me']);
     Route::post('refresh', [AuthController::class, 'refresh']);
     Route::group(
-        ['prefix' => 'user', 'middleware' => ['role:user,verifikator,admin']],
+        ['prefix' => 'user', 'middleware' => ['role:user']],
         function () {
             Route::post('leaves', [UserController::class, 'createLeave']);
             Route::get('leaves', [UserController::class, 'listLeaves']);

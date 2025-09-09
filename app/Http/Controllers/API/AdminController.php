@@ -35,9 +35,9 @@ class AdminController extends Controller
         return response()->json(['message' => 'User promoted to verifikator', 'user' => $user]);
     }
 
-    public function viewLeaveRequests()
+    public function viewLeaveRequests(Request $request)
     {
-        $requests = $this->service->getAllLeaveRequests();
+        $requests = $this->service->getAllLeaveRequests($request->query('status'));
         return response()->json($requests);
     }
 

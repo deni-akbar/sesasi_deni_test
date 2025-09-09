@@ -3,118 +3,88 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\LeaveRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\CreateLeaveRequest;
+use App\Http\Requests\UpdateLeaveRequest;
+use App\Services\UserService;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\ResetUserPasswordRequest;
 
 class UserController extends Controller
 {
-    // apply middleware auth:api or jwt auth
-    public function createLeave(Request $request)
+
+    protected $service;
+
+    public function __construct(UserService $service)
     {
-        $validator = Validator::make($request->all(), [
-            'type' => 'required|string',
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'details' => 'nullable|array'
-        ]);
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
-        $leave = LeaveRequest::create([
-            'user_id' => JWTAuth::user()->id,
-            'type' => $request->type,
-            'title' => $request->title,
-            'content' => $request->content,
-            'details' => $request->details,
-            'status' => 'submitted',
-            'submitted_at' => now()
-        ]);
+        $this->service = $service;
+    }
+
+    public function createLeave(CreateLeaveRequest $request)
+    {
+        $validated = $request->validated();
+        $leave = $this->service->createLeave($validated);
         return response()->json(['message' => 'Leave submitted', 'leave' => $leave], 201);
     }
 
     public function listLeaves()
     {
-        $leaves = LeaveRequest::where('user_id', JWTAuth::user()->id)->get();
+        $leaves = $this->service->listLeaves();
         return response()->json($leaves);
     }
 
     public function showLeave($id)
     {
-        $leave = LeaveRequest::where('user_id', JWTAuth::user()->id)->find($id);
+        $leave = $this->service->findLeave($id);
         if (!$leave) {
             return response()->json(['error' => 'Leave not found'], 404);
         }
         return response()->json($leave);
     }
 
-    public function updateLeave(Request $request, $id)
+    public function updateLeave(UpdateLeaveRequest $request, $id)
     {
-        $leave = LeaveRequest::where('user_id', JWTAuth::user()->id)->find($id);
-        if (!$leave) {
+        $result = $this->service->updateLeave($id, $request->validated());
+        if ($result === 'not_found') {
             return response()->json(['error' => 'Leave not found'], 404);
         }
-        if (!in_array($leave->status, ['draft', 'submitted', 'revision'])) {
+        if ($result === 'forbidden') {
             return response()->json(['error' => 'Cannot edit leave in its current status'], 403);
         }
-        $validator = Validator::make($request->all(), [
-            'type' => 'sometimes|string',
-            'title' => 'sometimes|string|max:255',
-            'content' => 'sometimes|string',
-            'details' => 'nullable|array'
-        ]);
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
-        $leave->fill($request->only(['type', 'title', 'content', 'details']));
-        $leave->save();
-        return response()->json(['message' => 'Leaveupdated', 'leave' => $leave]);
+        return response()->json(['message' => 'Leave updated', 'leave' => $result]);
     }
 
     public function cancelLeave($id)
     {
-        $leave = LeaveRequest::where('user_id', JWTAuth::user()->id)->find($id);
-        if (!$leave) {
+        $result = $this->service->cancelLeave($id);
+        if ($result === 'not_found') {
             return response()->json(['error' => 'Leave not found'], 404);
         }
-        if (in_array($leave->status, ['approved', 'rejected', 'cancelled'])) {
+        if ($result === 'forbidden') {
             return response()->json(['error' => 'Cannot cancel leave in its current status'], 403);
         }
-        $leave->status = 'cancelled';
-        $leave->processed_at = now();
-        $leave->save();
-        return response()->json(['message' => 'Leave cancelled', 'leave' => $leave]);
+        return response()->json(['message' => 'Leave cancelled', 'leave' => $result]);
     }
 
     public function deleteLeave($id)
     {
-        $leave = LeaveRequest::where('user_id', JWTAuth::user()->id)->find($id);
+        $leave = $this->service->deleteLeave($id);
         if (!$leave) {
             return response()->json(['error' => 'Leave not found'], 404);
         }
-        if (!in_array(
-            $leave->status,
-            ['draft', 'submitted', 'revision', 'rejected']
-        )) {
+        if ($leave === 'forbidden') {
             return response()->json(['error' => 'Cannot delete leave in its current status'], 403);
         }
-        $leave->delete();
         return response()->json(['message' => 'Leave deleted']);
     }
 
-    public function updatePassword(Request $request)
+    public function updatePassword(ResetUserPasswordRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'current_password' => 'required',
-            'password' => 'required|min:6|confirmed'
-        ]);
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
-        $user = JWTAuth::user();
-        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
-            return response()->json(
-                ['error' => 'Current password incorrect'],
-                403
-            );
+        $validated = $request->validated();
+        $result = $this->service->updatePassword($validated);
+        if ($result === 'current_password_incorrect') {
+            return response()->json(['error' => 'Current password is incorrect'], 403);
         }
-        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
-        $user->save();
         return response()->json(['message' => 'Password updated']);
     }
 }

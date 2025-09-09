@@ -27,4 +27,13 @@ class UserRepository implements UserRepositoryInterface
         $user->update($data);
         return $user;
     }
+
+    public function getUserVerified($verified)
+    {
+        $query = User::query();
+        if (!is_null($verified)) {
+            $query->where('is_verified', $verified);
+        }
+        return $query->with('role')->get();
+    }
 }

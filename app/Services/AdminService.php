@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\UserRepositoryInterface;
 use App\Repositories\RoleRepositoryInterface;
@@ -32,13 +30,13 @@ class AdminService
         return $this->users->find($id);
     }
 
-    public function createVerifier(array $data)
+    public function createVerifier(array $validated)
     {
         $role = $this->roles->getRoleByName('verifikator');
         return $this->users->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
             'role_id' => $role->id,
             'is_verified' => true,
         ]);
@@ -61,8 +59,8 @@ class AdminService
         $user->save();
     }
 
-    public function getAllLeaveRequests()
+    public function getAllLeaveRequests($req)
     {
-        return $this->leaves->getAllWithUser();
+        return $this->leaves->getAllWithUser($req);
     }
 }
