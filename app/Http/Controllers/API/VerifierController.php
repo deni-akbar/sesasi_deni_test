@@ -21,6 +21,9 @@ class VerifierController extends Controller
     public function listUsers(ListUserRequest $request)
     {
         $result = $this->service->getListUsers($request->verified);
+        if (count($result) === 0) {
+            return response()->json(['message' => 'No users found'], 404);
+        }
         return response()->json($result);
     }
 
@@ -36,6 +39,9 @@ class VerifierController extends Controller
     public function listLeaveRequests(ListLeaveRequest $request)
     {
         $result = $this->service->getLeaveRequestsFiltered($request->status);
+        if (count($result) === 0) {
+            return response()->json(['message' => 'No leave requests found'], 404);
+        }
         return response()->json($result);
     }
 

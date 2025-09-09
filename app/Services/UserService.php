@@ -92,7 +92,7 @@ class UserService
         $userId = JWTAuth::user()->id;
         $leave = $this->leaves->find($id);
         if ($leave && $leave->user_id == $userId) {
-            if (!in_array($leave->status, ['submitted', 'revision', 'rejected'])) {
+            if (!in_array($leave->status, ['submitted', 'revision', 'rejected', 'cancelled'])) {
                 return 'forbidden';
             }
             $this->leaves->delete($leave);

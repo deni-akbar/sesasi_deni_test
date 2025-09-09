@@ -30,6 +30,9 @@ class UserController extends Controller
     public function listLeaves()
     {
         $leaves = $this->service->listLeaves();
+        if (count($leaves) === 0) {
+            return response()->json(['message' => 'No leave requests found'], 404);
+        }
         return response()->json($leaves);
     }
 

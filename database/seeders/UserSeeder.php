@@ -32,5 +32,11 @@ class UserSeeder extends Seeder
             'role_id' => $userRole->id,
             'is_verified' => false
         ]);
+        User::firstOrCreate(['email' => 'user99@example.com'], [
+            'name' => 'User',
+            'password' => Hash::make('password'),
+            'role_id' => $userRole->id,
+            'is_verified' => false
+        ]);
     }
 }
