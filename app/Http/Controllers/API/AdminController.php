@@ -37,8 +37,11 @@ class AdminController extends Controller
 
     public function viewLeaveRequests(Request $request)
     {
-        $requests = $this->service->getAllLeaveRequests($request->query('status'));
-        return response()->json($requests);
+        $result = $this->service->getAllLeaveRequests($request->query('status'));
+        if (count($result) === 0) {
+            return response()->json(['message' => 'No leave requests found'], 404);
+        }
+        return response()->json($result);
     }
 
     public function resetPassword(Request $request, $id)
